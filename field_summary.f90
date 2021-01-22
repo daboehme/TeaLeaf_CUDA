@@ -28,6 +28,8 @@ SUBROUTINE field_summary()
 
   USE tea_module
 
+  USE caliper_mod
+
   IMPLICIT NONE
 
   REAL(KIND=8) :: vol,mass,ie,temp
@@ -52,6 +54,7 @@ SUBROUTINE field_summary()
   ie=0.0
   temp=0.0
 
+  CALL cali_begin_region('summary')
   IF(profiler_on) kernel_time=timer()
 
   IF(use_cuda_kernels)THEN
@@ -77,6 +80,7 @@ SUBROUTINE field_summary()
   CALL tea_sum(temp)
 
   IF(profiler_on) profiler%summary=profiler%summary+(timer()-kernel_time)
+  CALL cali_end_region('summary')
 
   IF(parallel%boss) THEN
 !$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN

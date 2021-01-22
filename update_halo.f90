@@ -25,6 +25,8 @@ MODULE update_halo_module
   USE tea_module
   USE report_module
 
+  USE caliper_mod
+
 CONTAINS
 
 SUBROUTINE update_halo(fields,depth)
@@ -34,9 +36,11 @@ SUBROUTINE update_halo(fields,depth)
   INTEGER :: fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
+  CALL cali_begin_region('halo_exchange')
   IF (profiler_on) halo_time=timer()
   CALL tea_exchange(fields,depth)
   IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+  CALL cali_end_region('halo_exchange')
 
   CALL update_boundary(fields, depth)
 
@@ -51,6 +55,7 @@ SUBROUTINE update_boundary(fields,depth)
   INTEGER :: t,fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
+  CALL cali_begin_region('halo_update')
   IF (profiler_on) halo_time=timer()
 
   IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
@@ -64,6 +69,7 @@ SUBROUTINE update_boundary(fields,depth)
   ENDIF
 
   IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+  CALL cali_end_region('halo_update')
 
 END SUBROUTINE update_boundary
 
@@ -74,6 +80,7 @@ SUBROUTINE update_tile_boundary(fields, depth)
   INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
   REAL(KIND=8) :: timer,halo_time
 
+  CALL cali_begin_region('internal_halo_update')
   IF (profiler_on) halo_time=timer()
 
   IF (tiles_per_task .GT. 1) THEN
@@ -81,7 +88,8 @@ SUBROUTINE update_tile_boundary(fields, depth)
   ENDIF
 
   IF (profiler_on) profiler%internal_halo_update = profiler%internal_halo_update + (timer() - halo_time)
-
+  CALL cali_end_region('internal_halo_update')
+  
 END SUBROUTINE update_tile_boundary
 
 END MODULE update_halo_module

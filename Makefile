@@ -61,7 +61,8 @@
 
 # Add home directory
 
-CUDA_HOME=/usr/local/cuda-9.2/
+CUDA_HOME=/usr/tce/packages/cuda/cuda-11.1.1
+CALIPER_HOME=/usr/workspace/boehme3/install/caliper/lassen-gcc8-cuda11
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -78,7 +79,7 @@ OMP=$(OMP_$(COMPILER))
 
 FLAGS_INTEL     = -O3 -fpp -no-prec-div
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
-FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp
+FLAGS_GNU       = -O3 -mcpu=native -funroll-loops -cpp
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
 FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
@@ -86,7 +87,7 @@ FLAGS_XL       = -O5 -qipa=partition=large -g -qfullpath -Q -qsigtrap -qextname=
 FLAGS_          = -O3
 CFLAGS_INTEL     = -O3 -no-prec-div -restrict -fno-alias
 CFLAGS_SUN       = -fast -xipo=2
-CFLAGS_GNU       = -O3 -march=native -funroll-loops
+CFLAGS_GNU       = -O3 -mcpu=native -funroll-loops
 CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
@@ -131,10 +132,10 @@ CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
 CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
 CODE_GEN_VOLTA=-gencode arch=compute_70,code=sm_70
-LDLIBS+=-lstdc++ -lcudart
+LDLIBS+=-lstdc++ -lcudart -lcaliper
 
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) -g
-CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c -g
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) -I$(CALIPER_HOME)/include/caliper/fortran -g
+CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -I$(CALIPER_HOME)/include -c -g
 CXXFLAGS=$(CFLAGS) -g
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
@@ -145,9 +146,10 @@ NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(C
 NV_FLAGS+=-DNO_ERR_CHK
 libdir.x86_64 = lib64
 libdir.i686   = lib
+libdir.ppc64le = lib64
 MACHINE := $(shell uname -m)
 libdir = $(libdir.$(MACHINE))
-LDFLAGS+=-L$(CUDA_HOME)/$(libdir)
+LDFLAGS+=-L$(CALIPER_HOME)/lib64 -L$(CUDA_HOME)/$(libdir)
 
 ifdef DEBUG
 NV_FLAGS+=-O0 -g -G
@@ -182,6 +184,7 @@ FORTRAN_FILES=\
 	calc_dt.o			\
 	timestep.o			\
 	set_field.o                   \
+	tea_caliper.o \
 	tea_leaf_common.o             \
 	tea_leaf_cg.o             	\
 	tea_leaf_cheby.o             	\

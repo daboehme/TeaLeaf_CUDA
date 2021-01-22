@@ -33,6 +33,7 @@ SUBROUTINE set_field()
 
   REAL(KIND=8) :: kernel_time,timer
 
+  CALL cali_begin_region('set_field')
   IF(profiler_on) kernel_time=timer()
 
   IF(use_cuda_kernels)THEN
@@ -42,6 +43,7 @@ SUBROUTINE set_field()
   ENDIF
 
   IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)
+  CALL cali_end_region('set_field')
 
 END SUBROUTINE set_field
 

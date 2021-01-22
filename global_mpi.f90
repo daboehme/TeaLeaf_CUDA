@@ -3,6 +3,8 @@ MODULE global_mpi_module
   USE definitions_module
   !USE MPI
 
+  USE caliper_mod
+
   IMPLICIT NONE
 
   include "mpif.h"
@@ -68,9 +70,11 @@ SUBROUTINE tea_allsum2(value1,value2)
   values=(/ value1, value2 /)
   totals=values
 
+  CALL cali_begin_region('dot_product')
   IF (profiler_on) dot_product_time=timer()
   CALL MPI_ALLREDUCE(values,totals,2,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
   IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  CALL cali_end_region('dot_product')
 
   value1=totals(1); value2=totals(2)
 

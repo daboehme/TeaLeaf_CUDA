@@ -22,9 +22,12 @@
 
 SUBROUTINE diffuse
 
+  USE tea_caliper_module
   USE tea_module
   USE timestep_module
   USE tea_leaf_module
+
+  USE caliper_mod
 
   IMPLICIT NONE
 
@@ -37,6 +40,10 @@ SUBROUTINE diffuse
   REAL(KIND=8)    :: kernel_total,totals(parallel%max_task)
 
   timerstart = timer()
+
+  CALL tea_caliper_start()
+
+  CALL cali_begin_string_byname('loop', 'timestep_loop')
 
   second_step=0.0 ! In order to prevent unused error
 
@@ -100,6 +107,8 @@ SUBROUTINE diffuse
     ENDIF
   ENDDO
 
+  CALL cali_end_byname('loop')
+
   IF ( profiler_on ) THEN
     ! First we need to find the maximum kernel time for each task. This
     ! seems to work better than finding the maximum time for each kernel and
@@ -157,6 +166,8 @@ SUBROUTINE diffuse
     ENDIF
 
   ENDIF
+
+  CALL tea_caliper_flush
 
   CALL tea_finalize
 

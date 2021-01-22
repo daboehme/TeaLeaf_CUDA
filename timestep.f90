@@ -31,6 +31,8 @@ SUBROUTINE timestep()
   USE calc_dt_module
   USE definitions_module
 
+  USE caliper_mod
+
   IMPLICIT NONE
 
   INTEGER :: t
@@ -39,7 +41,7 @@ SUBROUTINE timestep()
 
   REAL(KIND=8)    :: kernel_time,timer
 
-
+  CALL cali_begin_region('timestep')
   IF(profiler_on) kernel_time=timer()
 
   DO t=1,tiles_per_task
@@ -53,6 +55,7 @@ SUBROUTINE timestep()
   CALL tea_min(dt)
 
   IF(profiler_on) profiler%timestep=profiler%timestep+(timer()-kernel_time)
+  CALL cali_end_region('timestep')
 
   IF (parallel%boss) THEN
       WRITE(g_out,"(' Step ', i7,' time ', f11.7,' timestep  ',1pe9.2,i8)") step,time,dt

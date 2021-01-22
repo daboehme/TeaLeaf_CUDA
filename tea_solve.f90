@@ -30,6 +30,8 @@ MODULE tea_leaf_module
   USE tea_leaf_jacobi_module
   USE update_halo_module
 
+  USE caliper_mod
+
   IMPLICIT NONE
 
 CONTAINS
@@ -82,15 +84,18 @@ SUBROUTINE tea_leaf()
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
+  CALL cali_begin_region('total_solve')
   total_solve_time = timer()
 
   ! INIT
+  CALL cali_begin_region('tea_init')
+
   IF (profiler_on) init_time=timer()
 
   fields=0
   fields(FIELD_ENERGY1) = 1
   fields(FIELD_DENSITY) = 1
-
+  
   IF (profiler_on) halo_time=timer()
   CALL update_halo(fields,halo_exchange_depth)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
@@ -147,7 +152,9 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
+  CALL cali_end_region('tea_init')
 
+  CALL cali_begin_region('solve')
   IF (profiler_on) solve_time = timer()
 
   DO n=1,max_iters
@@ -437,6 +444,7 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
+  CALL cali_end_region('solve')
 
   IF (parallel%boss) THEN
 !$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
@@ -462,6 +470,7 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   ! RESET
+  CALL cali_begin_region('reset')
   IF (profiler_on) reset_time=timer()
 
   CALL tea_leaf_finalise()
@@ -474,12 +483,15 @@ SUBROUTINE tea_leaf()
   IF (profiler_on) reset_time = reset_time + (timer()-halo_time)
 
   IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
+  CALL cali_end_region('reset')
 
   IF (profiler_on .AND. parallel%boss) THEN
     total_solve_time = (timer() - total_solve_time)
     WRITE(0, "(a16,f16.10,a7,i7,a16,f16.10)") "Solve Time",total_solve_time,"Its",n,"Time Per It",total_solve_time/n
     WRITE(g_out, "(a16,f16.10,a7,i7,a16,f16.10)") "Solve Time",total_solve_time,"Its",n,"Time Per It",total_solve_time/n
   ENDIF
+
+  CALL cali_end_region('total_solve')
 
   IF (profiler_on .AND. tl_use_chebyshev) THEN
     CALL tea_sum(ch_time)
