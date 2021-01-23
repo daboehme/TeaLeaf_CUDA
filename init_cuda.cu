@@ -30,6 +30,8 @@
 #include <cstdio>
 #include <cassert>
 
+#include <adiak.hpp>
+
 TealeafCudaChunk cuda_chunk;
 
 extern "C" void initialise_cuda_
@@ -104,6 +106,22 @@ y_max(*in_y_max)
         DIE("Halo exchange depth unspecified or was too small");
     }
 
+    void* adiak_comm_p = 0;
+    MPI_Comm adiak_comm;
+    MPI_Comm_dup(MPI_COMM_WORLD, &adiak_comm);
+    adiak_comm_p = &adiak_comm;
+
+    adiak::init(adiak_comm_p);
+
+    adiak::jobsize();
+    adiak::launchdate();
+    adiak::user();
+
+    adiak::value("x_cells", readInt(input, "x_cells"));
+    adiak::value("y_cells", readInt(input, "y_cells"));
+    adiak::value("end_step", readInt(input, "end_step"));
+    adiak::value("halo_depth", readInt(input, "halo_depth"));
+
     bool tl_use_jacobi = paramEnabled(input, "tl_use_jacobi");
     bool tl_use_cg = paramEnabled(input, "tl_use_cg");
     bool tl_use_chebyshev = paramEnabled(input, "tl_use_chebyshev");
@@ -115,21 +133,25 @@ y_max(*in_y_max)
     {
         tea_solver = TEA_ENUM_PPCG;
         if(!rank)fprintf(stdout, "PPCG\n");
+        adiak::value("solver", "PPCG");
     }
     else if (tl_use_chebyshev)
     {
         tea_solver = TEA_ENUM_CHEBYSHEV;
         if(!rank)fprintf(stdout, "Chebyshev + CG\n");
+        adiak::value("solver", "Chebyshev + CG");
     }
     else if (tl_use_cg)
     {
         tea_solver = TEA_ENUM_CG;
         if(!rank)fprintf(stdout, "Conjugate gradient\n");
+        adiak::value("solver", "Conjugate gradient");
     }
     else if (tl_use_jacobi)
     {
         tea_solver = TEA_ENUM_JACOBI;
         if(!rank)fprintf(stdout, "Jacobi\n");
+        adiak::value("solver", "Jacobi");
     }
     else
     {
@@ -145,16 +167,19 @@ y_max(*in_y_max)
     {
         preconditioner_type = TL_PREC_JAC_DIAG;
         if(!rank)fprintf(stdout, "Diagonal Jacobi\n");
+        adiak::value("preconditioner", "Diagonal Jacobi");
     }
     else if (desired_preconditioner.find("jac_block") != std::string::npos)
     {
         preconditioner_type = TL_PREC_JAC_BLOCK;
         if(!rank)fprintf(stdout, "Block Jacobi\n");
+        adiak::value("preconditioner", "Block Jacobi");
     }
     else if (desired_preconditioner.find("none") != std::string::npos)
     {
         preconditioner_type = TL_PREC_NONE;
         if(!rank)fprintf(stdout, "None\n");
+        adiak::value("preconditioner", "None");
     }
     else
     {

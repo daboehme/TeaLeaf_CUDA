@@ -63,6 +63,7 @@
 
 CUDA_HOME=/usr/tce/packages/cuda/cuda-11.1.1
 CALIPER_HOME=/usr/workspace/boehme3/install/caliper/lassen-gcc8-cuda11
+ADIAK_HOME=/usr/workspace/boehme3/install/adiak/v0.3.0-lassen-gcc8
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -132,10 +133,10 @@ CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
 CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
 CODE_GEN_VOLTA=-gencode arch=compute_70,code=sm_70
-LDLIBS+=-lstdc++ -lcudart -lcaliper
+LDLIBS+=-lstdc++ -lcudart -lcaliper -ladiak
 
 FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) -I$(CALIPER_HOME)/include/caliper/fortran -g
-CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -I$(CALIPER_HOME)/include -c -g
+CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -I$(CALIPER_HOME)/include -I$(ADIAK_HOME)/include -c -g
 CXXFLAGS=$(CFLAGS) -g
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
@@ -149,7 +150,7 @@ libdir.i686   = lib
 libdir.ppc64le = lib64
 MACHINE := $(shell uname -m)
 libdir = $(libdir.$(MACHINE))
-LDFLAGS+=-L$(CALIPER_HOME)/lib64 -L$(CUDA_HOME)/$(libdir)
+LDFLAGS+=-L$(CALIPER_HOME)/lib64 -L$(ADIAK_HOME)/lib -L$(CUDA_HOME)/$(libdir)
 
 ifdef DEBUG
 NV_FLAGS+=-O0 -g -G

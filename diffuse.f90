@@ -29,6 +29,8 @@ SUBROUTINE diffuse
 
   USE caliper_mod
 
+  USE ISO_C_BINDING, ONLY: C_INT64_T
+
   IMPLICIT NONE
 
   INTEGER         :: loc(1)
@@ -39,11 +41,14 @@ SUBROUTINE diffuse
   REAL(KIND=8)    :: first_step,second_step
   REAL(KIND=8)    :: kernel_total,totals(parallel%max_task)
 
+  INTEGER(C_INT64_T) :: loop_iter_attr
+
   timerstart = timer()
 
   CALL tea_caliper_start()
 
   CALL cali_begin_string_byname('loop', 'timestep_loop')
+  loop_iter_attr = cali_make_loop_iteration_attribute('timestep_loop')
 
   second_step=0.0 ! In order to prevent unused error
 
@@ -52,6 +57,8 @@ SUBROUTINE diffuse
     step_time = timer()
 
     step = step + 1
+
+    CALL cali_begin_int(loop_iter_attr, step)
 
     CALL timestep()
 
@@ -86,6 +93,8 @@ SUBROUTINE diffuse
 
     END IF
 
+    CALL cali_end(loop_iter_attr)
+
     IF(time+g_small.GT.end_time.OR.step.GE.end_step) THEN
 
       complete=.TRUE.
@@ -105,6 +114,7 @@ SUBROUTINE diffuse
       EXIT
 
     ENDIF
+
   ENDDO
 
   CALL cali_end_byname('loop')
